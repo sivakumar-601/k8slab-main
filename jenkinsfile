@@ -50,15 +50,20 @@ pipeline {
         '''
       }
     }
-    stage('Deploy - Template and Apply') {
+    stage('Deploy with Helm') {
         steps {
             sh '''
             export KUBECONFIG=$HOME/k8s-3-node.conf
-            kubectl apply -f pv.yaml -f pvc.yaml -f py-service.yaml -f redis-service.yaml -f redis-deploy.yaml
-            export IMAGE_TAG=$BUILD_NUMBER
-            envsubst < py-deploy.yaml | kubectl apply -f .
-            kubectl rollout status deployment/py-deploy-07
-            '''     
+            helm uninstall py-redis-app --namespace ns07 || true
+            kubectl delete svc/redis-service svc/py-service deployment/redis-deploy deployment/py-deploy configmap/py-config --ignore-not-found
+            helm upgrade --install py-redis-app ./helm-py-redis \
+              --namespace ns07 \
+              --set pythonApp.image.repository=sivakumarippili/py-may26 \
+              --set pythonApp.image.tag=$BUILD_NUMBER \
+              --atomic --cleanup-on-fail
+            helm status py-redis-app --namespace ns07
+            kubectl rollout status deployment/py-deploy --namespace ns07
+        '''
         }
     }
     stage('Application Health Check') {
