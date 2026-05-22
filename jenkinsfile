@@ -60,6 +60,7 @@ pipeline {
               --namespace ns07 \
               --set pythonApp.image.repository=sivakumarippili/py-may26 \
               --set pythonApp.image.tag=$BUILD_NUMBER \
+              --set pythonApp.service.type=ClusterIP \
               --atomic --cleanup-on-fail
             helm status py-redis-app --namespace ns07
             kubectl rollout status deployment/py-deploy --namespace ns07
